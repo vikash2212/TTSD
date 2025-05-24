@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Text to Speech with Download</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1e1e2f, #2e2e3f);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    textarea {
+      width: 90%;
+      height: 150px;
+      padding: 10px;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+    }
+    select, button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      background: #00adb5;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #007a83;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Text to Speech AI</h1>
+
+  <textarea id="text" placeholder="Yahan likho jo bolna hai..."></textarea><br>
+
+  <label>Language:</label>
+  <select id="language">
+    <option value="hi-IN">Hindi</option>
+    <option value="en-US" selected>English</option>
+  </select><br>
+
+  <label>Choose Voice:</label>
+  <select id="voiceSelect"></select><br>
+
+  <button onclick="startSpeaking()">Speak</button>
+  <button onclick="startRecording()">Download Voice</button>
+
+  <script>
+    const voiceSelect = document.getElementById("voiceSelect");
+    let voices = [];
+
+    function populateVoices() {
+      voices = speechSynthesis.getVoices();
+      voiceSelect.innerHTML = '';
+      voices.forEach((voice, i) => {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        voiceSelect.appendChild(option);
+      });
+    }
+
+    speechSynthesis.onvoiceschanged = populateVoices;
+
+    function startSpeaking() {
+      const text = document.getElementById("text").value;
+      const lang = document.getElementById("language").value;
+      const voiceIndex = voiceSelect.value;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang;
+      if (voices[voiceIndex]) {
+        utterance.voice = voices[voiceIndex];
+      }
+      speechSynthesis.speak(utterance);
+    }
+
+    function startRecording() {
+      const text = document.getElementById("text").value;
+      const lang = document.getElementById("language").value;
+      const voiceIndex = voiceSelect.value;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang;
+      if (voices[voiceIndex]) {
+        utterance.voice = voices[voiceIndex];
+      }
+
+      const audioContext = new AudioContext();
+      const dest = audioContext.createMediaStreamDestination();
+      const recorder = new MediaRecorder(dest.stream);
+      const chunks = [];
+
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "voice.wav";
+        a.click();
+      };
+
+      const synth = window.speechSynthesis;
+      const source = audioContext.createMediaStreamSource(dest.stream);
+
+      const synthVoice = new SpeechSynthesisUtterance(text);
+      synthVoice.voice = voices[voiceIndex];
+      synthVoice.lang = lang;
+
+      recorder.start();
+      speechSynthesis.speak(synthVoice);
+
+      synthVoice.onend = () => {
+        recorder.stop();
+        audioContext.close();
+      };
+    }
+  </script>
+
+</body>
+</html>
